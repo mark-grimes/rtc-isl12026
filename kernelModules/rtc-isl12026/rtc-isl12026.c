@@ -84,26 +84,6 @@ static int isl12026_read_regs(struct i2c_client *client, uint8_t reg,
 	return 0;
 }
 
-/* Only useful for writing to the status register (ISL12026_REG_SR). For all other
-   registers use isl12026_write_ccr_reg instead to perform the correct write sequence. */
-static int isl12026_write_reg(struct i2c_client *client,
-			      uint8_t reg, uint8_t val)
-{
-	/* register address is 2 bytes, but the high byte is never used */
-	uint8_t data[3] = { 0x00, reg, val };
-	int err;
-
-	err = i2c_master_send(client, data, sizeof(data));
-	if (err != sizeof(data)) {
-		dev_err(&client->dev,
-			"%s: err=%d addr=%02x, data=%02x\n",
-			__func__, err, data[1], data[1]);
-		return -EIO;
-	}
-
-	return 0;
-}
-
 /* Write to a Clock/Control Register (CCR). The ISL12026 requires a strict sequence of:
        1) Set the WEL bit in the status register
        2) Set the RWEL and WEL bits in the status register
