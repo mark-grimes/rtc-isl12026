@@ -252,7 +252,8 @@ static int isl12026_get_datetime(struct i2c_client *client, struct rtc_time *tm)
 	tm->tm_mday = bcd2bin(buf[ISL12026_REG_DT-ISL12026_REG_SC] & 0x3F);
 	tm->tm_wday = buf[ISL12026_REG_DW-ISL12026_REG_SC] & 0x07;
 	tm->tm_mon = bcd2bin(buf[ISL12026_REG_MO-ISL12026_REG_SC] & 0x1F) - 1;
-	tm->tm_year = bcd2bin(buf[ISL12026_REG_YR-ISL12026_REG_SC]) + 100;
+	tm->tm_year = bcd2bin(buf[ISL12026_REG_YR-ISL12026_REG_SC])
+			+ ((bcd2bin(buf[ISL12026_REG_Y2K-ISL12026_REG_SC]) - 19) * 100);
 
 	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
 		"mday=%d, mon=%d, year=%d, wday=%d\n",
@@ -291,6 +292,8 @@ static int isl12026_set_datetime(struct i2c_client *client, struct rtc_time *tm)
 
 	/* year and century */
 	buf[ISL12026_REG_YR-ISL12026_REG_SC+2] = bin2bcd(tm->tm_year % 100);
+	/* set the Y2K register to either 19 or 20 for the century */
+	buf[ISL12026_REG_Y2K-ISL12026_REG_SC+2] = bin2bcd(tm->tm_year/100 + 19);
 
 	buf[ISL12026_REG_DW-ISL12026_REG_SC+2] = tm->tm_wday & 0x07;
 
