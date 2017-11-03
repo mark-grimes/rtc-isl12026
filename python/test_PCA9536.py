@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 """
-Tests the ISL12026 Real Time Clock class
+Tests the PCA9536 bus expander class
 """
 
 __author__    = "Mark Grimes, Paolo Baesso"
