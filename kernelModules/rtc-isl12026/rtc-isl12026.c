@@ -35,6 +35,7 @@
 #define ISL12026_REG_Y2K	0x37
 
 #define ISL12026_REG_SR		0x3f
+#define ISL12026_REG_PWR	0x14
 
 /* ISL register bits */
 #define ISL12026_HR_MIL		(1 << 7)	/* military or 24 hour time */
@@ -43,6 +44,9 @@
 #define ISL12026_SR_RWEL	(1 << 2)    /* indicate that the write is starting */
 #define ISL12026_SR_WEL 	(1 << 1)    /* indicate that you want to start a write */
 #define ISL12026_SR_RTCF	(1 << 0)    /* previous power failure */
+
+#define ISL12026_PWR_SBIB	(1 << 7)    /* disables i2c when on battery backup */
+#define ISL12026_PWR_BSW	(1 << 6)    /* determines when to switch to battery */
 
 
 static struct i2c_driver isl12026_driver;
@@ -80,7 +84,8 @@ static int isl12026_read_regs(struct i2c_client *client, uint8_t reg,
 	return 0;
 }
 
-
+/* Only useful for writing to the status register (ISL12026_REG_SR). For all other
+   registers use isl12026_write_ccr_reg instead to perform the correct write sequence. */
 static int isl12026_write_reg(struct i2c_client *client,
 			      uint8_t reg, uint8_t val)
 {
@@ -99,17 +104,87 @@ static int isl12026_write_reg(struct i2c_client *client,
 	return 0;
 }
 
-/* Write the bytes given without adding the register address before hand. This assumes that
-   the caller has already done this themself. */
-static int isl12026_write_raw_bytes(struct i2c_client *client, uint8_t *data, size_t n)
+/* Write to a Clock/Control Register (CCR). The ISL12026 requires a strict sequence of:
+       1) Set the WEL bit in the status register
+       2) Set the RWEL and WEL bits in the status register
+       3) Write to the register you originally intended  */
+static int isl12026_write_ccr_reg(struct i2c_client *client,
+			      uint8_t reg, uint8_t val)
 {
-	int err;
+	/* register addresses are all 2 bytes, but the highest byte is never used */
+	uint8_t WEL_bit[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_WEL };
+	uint8_t WEL_and_RWEL_bits[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL };
+	uint8_t data[3] = { 0x00, reg, val };
 
-	err = i2c_master_send(client, data, n);
-	if (err != n) {
-		dev_err(&client->dev,
-			"%s: err=%d, data size=%02x\n",
-			__func__, err, n-1);
+	struct i2c_msg msgs[] = {
+		{ /* Set WEL bit in the status register */
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= sizeof(WEL_bit),
+			.buf	= WEL_bit
+		},
+		{ /* Set WEL and RWEL bits in the status register */
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= sizeof(WEL_and_RWEL_bits),
+			.buf	= WEL_and_RWEL_bits
+		}, /* Perform the write intended */
+		{
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= sizeof(data),
+			.buf	= data
+		}
+	};
+
+	int ret;
+
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret != ARRAY_SIZE(msgs)) {
+		dev_err(&client->dev, "%s: write error, ret=%d\n",
+			__func__, ret);
+		return -EIO;
+	}
+
+	return 0;
+}
+
+/* Write the bytes given without adding the register address before hand, assuming
+   the caller has already done this themselves (saves copying into a new array).
+   See isl12026_write_ccr_reg above for a description of the write sequence. */
+static int isl12026_write_ccr_bytes(struct i2c_client *client, uint8_t *data, size_t n)
+{
+	/* register addresses are all 2 bytes, but the highest byte is never used */
+	uint8_t WEL_bit[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_WEL };
+	uint8_t WEL_and_RWEL_bits[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL };
+
+	struct i2c_msg msgs[] = {
+		{ /* Set WEL bit in the status register */
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= sizeof(WEL_bit),
+			.buf	= WEL_bit
+		},
+		{ /* Set WEL and RWEL bits in the status register */
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= sizeof(WEL_and_RWEL_bits),
+			.buf	= WEL_and_RWEL_bits
+		}, /* Perform the write intended */
+		{
+			.addr	= client->addr,
+			.flags	= 0,
+			.len	= n,
+			.buf	= data
+		}
+	};
+
+	int ret;
+
+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret != ARRAY_SIZE(msgs)) {
+		dev_err(&client->dev, "%s: write error, ret=%d\n",
+			__func__, ret);
 		return -EIO;
 	}
 
@@ -161,11 +236,13 @@ static int isl12026_get_datetime(struct i2c_client *client, struct rtc_time *tm)
 	tm->tm_sec = bcd2bin(buf[ISL12026_REG_SC-ISL12026_REG_SC] & 0x7F);
 	tm->tm_min = bcd2bin(buf[ISL12026_REG_MN-ISL12026_REG_SC] & 0x7F);
 	tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x3F);
-	if( buf[ISL12026_REG_HR-ISL12026_REG_SC] & ISL12026_HR_MIL ) { /* hour is in 24 hour format */
+	if( buf[ISL12026_REG_HR-ISL12026_REG_SC] & ISL12026_HR_MIL ) {
+		/* Hour is in 24 hour format */
 		tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x3F);
 	}
-	else { /* hour is in 12 hour format with the 6th bit indicating PM */
-		/* Note this driver won't set the time in this format, but just in
+	else {
+		/* Hour is in 12 hour format with the 6th bit indicating AM/PM.
+		   Note this driver won't set the time in this format, but just in
 		   case the chip was set in some other way */
 		tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x1F);
 		if( buf[ISL12026_REG_HR-ISL12026_REG_SC] & (1 << 5) ) {
@@ -217,16 +294,7 @@ static int isl12026_set_datetime(struct i2c_client *client, struct rtc_time *tm)
 
 	buf[ISL12026_REG_DW-ISL12026_REG_SC+2] = tm->tm_wday & 0x07;
 
-	/* Data sheet says for writes we need to set the WEL bit (0x02), then both WEL and
-	   RWEL bits (0x06) to the status register before performing the write */
-	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_WEL);
-	if (ret) return -EIO;
-
-	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL);
-	if (ret) return -EIO;
-
-	/* Should now be able to perform the write we want */
-	ret = isl12026_write_raw_bytes(client, buf, sizeof(buf));
+	ret = isl12026_write_ccr_bytes(client, buf, sizeof(buf));
 	if (ret) return -EIO;
 
 	return 0;
@@ -251,6 +319,7 @@ static int isl12026_probe(struct i2c_client *client,
 			  const struct i2c_device_id *id)
 {
 	struct rtc_device *rtc;
+	int result;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
 		return -ENODEV;
@@ -258,7 +327,18 @@ static int isl12026_probe(struct i2c_client *client,
 	rtc = devm_rtc_device_register(&client->dev,
 					isl12026_driver.driver.name,
 					&isl12026_rtc_ops, THIS_MODULE);
-	return PTR_ERR_OR_ZERO(rtc);
+	result = PTR_ERR_OR_ZERO(rtc);
+
+	/* Disable the i2c bus when on battery backup. This minimises drain on the
+	   battery, and it's not like we're going to use the bus when there's no power. */
+	if( result==0 ) {
+		result = isl12026_write_ccr_reg(client, ISL12026_REG_PWR, ISL12026_PWR_SBIB | ISL12026_PWR_BSW);
+		if (result)
+			dev_warn(&client->dev,"Unable to disable i2c bus during battery power option");
+		result = 0; /* reset to the result from PTR_ERR_OR_ZERO(rtc) */
+	}
+
+	return result;
 }
 
 #ifdef CONFIG_OF
