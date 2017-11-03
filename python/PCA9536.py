@@ -46,8 +46,8 @@ class PCA9536(object):
         self._writeRegister(3, direction)
 
     def getIOReg(self):
-        #Read the content of register 6 or 7 which determine the polarity of the
-        #ports (0= normal, 1= inverted).
+        #Read the content of register 6 or 7 which determine the direction of the
+        #ports (0= normal, 1= input).
         return self._readRegister(3)
 
     def getInputs(self):
