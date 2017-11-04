@@ -313,9 +313,10 @@ static int isl12026_probe(struct i2c_client *client,
 	result = PTR_ERR_OR_ZERO(rtc);
 
 	/* Disable the i2c bus when on battery backup. This minimises drain on the
-	   battery, and it's not like we're going to use the bus when there's no power. */
+	   battery, and it's not like we're going to use the bus when there's no power.
+	   Also make sure we're in standard power mode by *not* setting the BSW bit. */
 	if( result==0 ) {
-		result = isl12026_write_ccr_reg(client, ISL12026_REG_PWR, ISL12026_PWR_SBIB | ISL12026_PWR_BSW);
+		result = isl12026_write_ccr_reg(client, ISL12026_REG_PWR, ISL12026_PWR_SBIB);
 		if (result)
 			dev_warn(&client->dev,"Unable to disable i2c bus during battery power option");
 		result = 0; /* reset to the result from PTR_ERR_OR_ZERO(rtc) */
