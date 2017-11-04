@@ -1,5 +1,15 @@
 # Kernel module driver for the Intersil 12026 Real Time Clock
 
+## To use a pre-built version
+
+Look for a release tag and follow the instructions on the release notes. E.g.
+
+* [v0.0.1](https://gitlab.com/rymapt/EnvMonitorSensors/tags/v0.0.1)
+
+There might be more recent releases than listed here. Look in [the tag list](https://gitlab.com/rymapt/EnvMonitorSensors/tags).
+
+## To compile yourself
+
 To build this you need to first get the source code for the kernel you are running. [This stackoverflow answer](https://stackoverflow.com/a/23685353) gives details of how to do it on a Raspberry Pi. Basically:
 
 ```
@@ -36,7 +46,7 @@ Fri 03 Nov 2017 11:32:57 UTC  -0.894538 seconds
 
 If you use the battery for backup power you should not see this after the first time.
 
-# Installing the driver
+### Installing the driver
 
 The compiled driver (`rtc-isl12026.ko` file) should be copied to the `/lib/modules/$(uname -r)/kernel/drivers/rtc/` directory and then `depmod` used to tell the system about it. I.e.:
 
@@ -47,7 +57,7 @@ sudo depmod -a
 
 The driver should then be available without having to reference the compiled file directly. I assume that **if you upgrade your kernel, you will lose the driver**, since it's tied to a specific kernel directory. I don't know if copying the file to another directory other than the kernel it was compiled against works.
 
-# Getting the driver to load at each boot
+### Getting the driver to load at each boot
 
 Raspberry Pi now uses device trees to manage everything, which is not something I know much about. You need to compile an overlay with settings for e.g. the I2C address to be available at boot, and tell the kernel to load it. I've cobbled together the `i2c-rtc-isl12026.dts` overlay and it seems to work. First compile it to the binary format and stick it in the boot volume:
 
@@ -59,4 +69,13 @@ sudo dtc -I dts -O dtb -o /boot/overlays/i2c-rtc-isl12026.dtbo <this repo>/kerne
 
 ```
 dtoverlay=i2c-rtc-isl12026,isl12026
+```
+
+### Remove the fake hwclock
+
+You'll get conflicts if you leave the fake-hwclock module running. I don't know of a way to only disable the fake-hwclock if a real one is not present.
+
+```
+sudo apt-get -y remove fake-hwclock
+sudo update-rc.d -f fake-hwclock remove
 ```
