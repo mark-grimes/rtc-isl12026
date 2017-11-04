@@ -35,3 +35,28 @@ Fri 03 Nov 2017 11:32:57 UTC  -0.894538 seconds
 ```
 
 If you use the battery for backup power you should not see this after the first time.
+
+# Installing the driver
+
+The compiled driver (`rtc-isl12026.ko` file) should be copied to the `/lib/modules/$(uname -r)/kernel/drivers/rtc/` directory and then `depmod` used to tell the system about it. I.e.:
+
+```
+sudo cp rtc-isl12026.ko /lib/modules/$(uname -r)/kernel/drivers/rtc/
+sudo depmod -a
+```
+
+The driver should then be available without having to reference the compiled file directly. I assume that **if you upgrade your kernel, you will lose the driver**, since it's tied to a specific kernel directory. I don't know if copying the file to another directory other than the kernel it was compiled against works.
+
+# Getting the driver to load at each boot
+
+Raspberry Pi now uses device trees to manage everything, which is not something I know much about. You need to compile an overlay with settings for e.g. the I2C address to be available at boot, and tell the kernel to load it. I've cobbled together the `i2c-rtc-isl12026.dts` overlay and it seems to work. First compile it to the binary format and stick it in the boot volume:
+
+```
+sudo dtc -I dts -O dtb -o /boot/overlays/i2c-rtc-isl12026.dtbo <this repo>/kernelModules/rtc-isl12026/i2c-rtc-isl12026.dts
+```
+
+(I get some warning about "has a unit name, but no reg property" but it doesn't seem to matter) Then add this line to the bottom of `/boot/config.txt`:
+
+```
+dtoverlay=i2c-rtc-isl12026,isl12026
+```

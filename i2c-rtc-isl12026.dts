@@ -1,0 +1,22 @@
+// Definitions for the ISL12026 Real Time Clock
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708";
+
+	fragment@0 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			isl12026: isl12026@6f {
+				compatible = "isil,isl12026";
+				reg = <0x6f>;
+				status = "okay";
+			};
+		};
+	};
+};
