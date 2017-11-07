@@ -25,28 +25,29 @@
 #include <linux/of_device.h>
 
 /* ISL register offsets */
-#define ISL12026_REG_SC		0x30
-#define ISL12026_REG_MN		0x31
-#define ISL12026_REG_HR		0x32
-#define ISL12026_REG_DT		0x33
-#define ISL12026_REG_MO		0x34
-#define ISL12026_REG_YR		0x35
-#define ISL12026_REG_DW		0x36
-#define ISL12026_REG_Y2K	0x37
+#define ISL12026_REG_RTC_START          0x30
+#define ISL12026_REG_RTC_SC_OFFSET      0x00      /* register 0x30 */
+#define ISL12026_REG_RTC_MN_OFFSET      0x01      /* register 0x31 */
+#define ISL12026_REG_RTC_HR_OFFSET      0x02      /* register 0x32 */
+#define ISL12026_REG_RTC_DT_OFFSET      0x03      /* register 0x33 */
+#define ISL12026_REG_RTC_MO_OFFSET      0x04      /* register 0x34 */
+#define ISL12026_REG_RTC_YR_OFFSET      0x05      /* register 0x35 */
+#define ISL12026_REG_RTC_DW_OFFSET      0x06      /* register 0x36 */
+#define ISL12026_REG_RTC_Y2K_OFFSET     0x07      /* register 0x37 */
 
-#define ISL12026_REG_SR		0x3f
-#define ISL12026_REG_PWR	0x14
+#define ISL12026_REG_SR                 0x3f
+#define ISL12026_REG_PWR                0x14
 
 /* ISL register bits */
-#define ISL12026_HR_MIL		(1 << 7)	/* military or 24 hour time */
+#define ISL12026_HR_MIL                 (1 << 7)  /* military or 24 hour time */
 
-#define ISL12026_SR_OSCF	(1 << 4)    /* oscillator failed */
-#define ISL12026_SR_RWEL	(1 << 2)    /* indicate that the write is starting */
-#define ISL12026_SR_WEL 	(1 << 1)    /* indicate that you want to start a write */
-#define ISL12026_SR_RTCF	(1 << 0)    /* previous power failure */
+#define ISL12026_SR_OSCF                (1 << 4)  /* oscillator failed */
+#define ISL12026_SR_RWEL                (1 << 2)  /* indicate that the write is starting */
+#define ISL12026_SR_WEL                 (1 << 1)  /* indicate that you want to start a write */
+#define ISL12026_SR_RTCF                (1 << 0)  /* previous power failure */
 
-#define ISL12026_PWR_SBIB	(1 << 7)    /* disables i2c when on battery backup */
-#define ISL12026_PWR_BSW	(1 << 6)    /* determines when to switch to battery */
+#define ISL12026_PWR_SBIB               (1 << 7)  /* disables i2c when on battery backup */
+#define ISL12026_PWR_BSW                (1 << 6)  /* determines when to switch to battery */
 
 
 static struct i2c_driver isl12026_driver;
@@ -59,16 +60,16 @@ static int isl12026_read_regs(struct i2c_client *client, uint8_t reg,
 
 	struct i2c_msg msgs[] = {
 		{
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= 2,
-			.buf	= registerAddress
-		},		/* setup read ptr */
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = 2,
+			.buf    = registerAddress
+		},   /* setup read ptr */
 		{
-			.addr	= client->addr,
-			.flags	= I2C_M_RD,
-			.len	= n,
-			.buf	= data
+			.addr   = client->addr,
+			.flags  = I2C_M_RD,
+			.len    = n,
+			.buf    = data
 		}
 	};
 
@@ -98,22 +99,22 @@ static int isl12026_write_ccr_reg(struct i2c_client *client,
 
 	struct i2c_msg msgs[] = {
 		{ /* Set WEL bit in the status register */
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= sizeof(WEL_bit),
-			.buf	= WEL_bit
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = sizeof(WEL_bit),
+			.buf    = WEL_bit
 		},
 		{ /* Set WEL and RWEL bits in the status register */
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= sizeof(WEL_and_RWEL_bits),
-			.buf	= WEL_and_RWEL_bits
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = sizeof(WEL_and_RWEL_bits),
+			.buf    = WEL_and_RWEL_bits
 		}, /* Perform the write intended */
 		{
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= sizeof(data),
-			.buf	= data
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = sizeof(data),
+			.buf    = data
 		}
 	};
 
@@ -140,22 +141,22 @@ static int isl12026_write_ccr_bytes(struct i2c_client *client, uint8_t *data, si
 
 	struct i2c_msg msgs[] = {
 		{ /* Set WEL bit in the status register */
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= sizeof(WEL_bit),
-			.buf	= WEL_bit
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = sizeof(WEL_bit),
+			.buf    = WEL_bit
 		},
 		{ /* Set WEL and RWEL bits in the status register */
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= sizeof(WEL_and_RWEL_bits),
-			.buf	= WEL_and_RWEL_bits
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = sizeof(WEL_and_RWEL_bits),
+			.buf    = WEL_and_RWEL_bits
 		}, /* Perform the write intended */
 		{
-			.addr	= client->addr,
-			.flags	= 0,
-			.len	= n,
-			.buf	= data
+			.addr   = client->addr,
+			.flags  = 0,
+			.len    = n,
+			.buf    = data
 		}
 	};
 
@@ -177,11 +178,11 @@ static int isl12026_write_ccr_bytes(struct i2c_client *client, uint8_t *data, si
  */
 static int isl12026_get_datetime(struct i2c_client *client, struct rtc_time *tm)
 {
-	uint8_t buf[ISL12026_REG_Y2K - ISL12026_REG_SC + 1];
+	uint8_t buf[ISL12026_REG_RTC_Y2K_OFFSET + 1];
 	uint8_t status;
 	int ret;
 
-	ret = isl12026_read_regs(client, ISL12026_REG_SC, buf, sizeof(buf));
+	ret = isl12026_read_regs(client, ISL12026_REG_RTC_START, buf, sizeof(buf));
 	if (ret)
 		return ret;
 
@@ -203,37 +204,37 @@ static int isl12026_get_datetime(struct i2c_client *client, struct rtc_time *tm)
 		"mday=%02x, mon=%02x, year=%02x, wday=%02x, y2k=%02x, "
 		"sr=%02x",
 		__func__,
-		buf[ISL12026_REG_SC-ISL12026_REG_SC],
-		buf[ISL12026_REG_MN-ISL12026_REG_SC],
-		buf[ISL12026_REG_HR-ISL12026_REG_SC],
-		buf[ISL12026_REG_DT-ISL12026_REG_SC],
-		buf[ISL12026_REG_MO-ISL12026_REG_SC],
-		buf[ISL12026_REG_YR-ISL12026_REG_SC],
-		buf[ISL12026_REG_DW-ISL12026_REG_SC],
-		buf[ISL12026_REG_Y2K-ISL12026_REG_SC],
+		buf[ISL12026_REG_RTC_SC_OFFSET],
+		buf[ISL12026_REG_RTC_MN_OFFSET],
+		buf[ISL12026_REG_RTC_HR_OFFSET],
+		buf[ISL12026_REG_RTC_DT_OFFSET],
+		buf[ISL12026_REG_RTC_MO_OFFSET],
+		buf[ISL12026_REG_RTC_YR_OFFSET],
+		buf[ISL12026_REG_RTC_DW_OFFSET],
+		buf[ISL12026_REG_RTC_Y2K_OFFSET],
 		status);
 
-	tm->tm_sec = bcd2bin(buf[ISL12026_REG_SC-ISL12026_REG_SC] & 0x7F);
-	tm->tm_min = bcd2bin(buf[ISL12026_REG_MN-ISL12026_REG_SC] & 0x7F);
-	tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x3F);
-	if( buf[ISL12026_REG_HR-ISL12026_REG_SC] & ISL12026_HR_MIL ) {
+	tm->tm_sec = bcd2bin(buf[ISL12026_REG_RTC_SC_OFFSET] & 0x7F);
+	tm->tm_min = bcd2bin(buf[ISL12026_REG_RTC_MN_OFFSET] & 0x7F);
+	tm->tm_hour = bcd2bin(buf[ISL12026_REG_RTC_HR_OFFSET] & 0x3F);
+	if( buf[ISL12026_REG_RTC_HR_OFFSET] & ISL12026_HR_MIL ) {
 		/* Hour is in 24 hour format */
-		tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x3F);
+		tm->tm_hour = bcd2bin(buf[ISL12026_REG_RTC_HR_OFFSET] & 0x3F);
 	}
 	else {
 		/* Hour is in 12 hour format with the 6th bit indicating AM/PM.
 		   Note this driver won't set the time in this format, but just in
 		   case the chip was set in some other way */
-		tm->tm_hour = bcd2bin(buf[ISL12026_REG_HR-ISL12026_REG_SC] & 0x1F);
-		if( buf[ISL12026_REG_HR-ISL12026_REG_SC] & (1 << 5) ) {
+		tm->tm_hour = bcd2bin(buf[ISL12026_REG_RTC_HR_OFFSET] & 0x1F);
+		if( buf[ISL12026_REG_RTC_HR_OFFSET] & (1 << 5) ) {
 			tm->tm_hour += 12;
 		}
 	}
-	tm->tm_mday = bcd2bin(buf[ISL12026_REG_DT-ISL12026_REG_SC] & 0x3F);
-	tm->tm_wday = buf[ISL12026_REG_DW-ISL12026_REG_SC] & 0x07;
-	tm->tm_mon = bcd2bin(buf[ISL12026_REG_MO-ISL12026_REG_SC] & 0x1F) - 1;
-	tm->tm_year = bcd2bin(buf[ISL12026_REG_YR-ISL12026_REG_SC])
-			+ ((bcd2bin(buf[ISL12026_REG_Y2K-ISL12026_REG_SC]) - 19) * 100);
+	tm->tm_mday = bcd2bin(buf[ISL12026_REG_RTC_DT_OFFSET] & 0x3F);
+	tm->tm_wday = buf[ISL12026_REG_RTC_DW_OFFSET] & 0x07;
+	tm->tm_mon = bcd2bin(buf[ISL12026_REG_RTC_MO_OFFSET] & 0x1F) - 1;
+	tm->tm_year = bcd2bin(buf[ISL12026_REG_RTC_YR_OFFSET])
+			+ ((bcd2bin(buf[ISL12026_REG_RTC_Y2K_OFFSET]) - 19) * 100);
 
 	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
 		"mday=%d, mon=%d, year=%d, wday=%d\n",
@@ -248,7 +249,7 @@ static int isl12026_set_datetime(struct i2c_client *client, struct rtc_time *tm)
 {
 	int ret;
 	/* extra +2 to put 2 byte register address in the first position */
-	uint8_t buf[ISL12026_REG_Y2K-ISL12026_REG_SC + 1 + 2];
+	uint8_t buf[ISL12026_REG_RTC_Y2K_OFFSET + 1 + 2];
 
 	dev_dbg(&client->dev, "%s: secs=%d, mins=%d, hours=%d, "
 		"mday=%d, mon=%d, year=%d, wday=%d\n",
@@ -258,24 +259,24 @@ static int isl12026_set_datetime(struct i2c_client *client, struct rtc_time *tm)
 
 	/* put the register to write to as the first piece of data */
 	buf[0] = 0x00; /* register address is 2 bytes, but we never need this byte */
-	buf[1] = ISL12026_REG_SC;
+	buf[1] = ISL12026_REG_RTC_START;
 
 	/* hours, minutes and seconds */
-	buf[ISL12026_REG_SC-ISL12026_REG_SC+2] = bin2bcd(tm->tm_sec);
-	buf[ISL12026_REG_MN-ISL12026_REG_SC+2] = bin2bcd(tm->tm_min);
-	buf[ISL12026_REG_HR-ISL12026_REG_SC+2] = bin2bcd(tm->tm_hour) | ISL12026_HR_MIL;
+	buf[ISL12026_REG_RTC_SC_OFFSET+2] = bin2bcd(tm->tm_sec);
+	buf[ISL12026_REG_RTC_MN_OFFSET+2] = bin2bcd(tm->tm_min);
+	buf[ISL12026_REG_RTC_HR_OFFSET+2] = bin2bcd(tm->tm_hour) | ISL12026_HR_MIL;
 
-	buf[ISL12026_REG_DT-ISL12026_REG_SC+2] = bin2bcd(tm->tm_mday);
+	buf[ISL12026_REG_RTC_DT_OFFSET+2] = bin2bcd(tm->tm_mday);
 
 	/* month, 1 - 12 */
-	buf[ISL12026_REG_MO-ISL12026_REG_SC+2] = bin2bcd(tm->tm_mon + 1);
+	buf[ISL12026_REG_RTC_MO_OFFSET+2] = bin2bcd(tm->tm_mon + 1);
 
 	/* year and century */
-	buf[ISL12026_REG_YR-ISL12026_REG_SC+2] = bin2bcd(tm->tm_year % 100);
+	buf[ISL12026_REG_RTC_YR_OFFSET+2] = bin2bcd(tm->tm_year % 100);
 	/* set the Y2K register to either 19 or 20 for the century */
-	buf[ISL12026_REG_Y2K-ISL12026_REG_SC+2] = bin2bcd(tm->tm_year/100 + 19);
+	buf[ISL12026_REG_RTC_Y2K_OFFSET+2] = bin2bcd(tm->tm_year/100 + 19);
 
-	buf[ISL12026_REG_DW-ISL12026_REG_SC+2] = tm->tm_wday & 0x07;
+	buf[ISL12026_REG_RTC_DW_OFFSET+2] = tm->tm_wday & 0x07;
 
 	ret = isl12026_write_ccr_bytes(client, buf, sizeof(buf));
 	if (ret) return -EIO;
@@ -294,8 +295,8 @@ static int isl12026_rtc_set_time(struct device *dev, struct rtc_time *tm)
 }
 
 static const struct rtc_class_ops isl12026_rtc_ops = {
-	.read_time	= isl12026_rtc_read_time,
-	.set_time	= isl12026_rtc_set_time,
+	.read_time  = isl12026_rtc_read_time,
+	.set_time   = isl12026_rtc_set_time,
 };
 
 static int isl12026_probe(struct i2c_client *client,
@@ -341,14 +342,14 @@ static const struct i2c_device_id isl12026_id[] = {
 MODULE_DEVICE_TABLE(i2c, isl12026_id);
 
 static struct i2c_driver isl12026_driver = {
-	.driver		= {
-		.name	= "rtc-isl12026",
+	.driver     = {
+		.name   = "rtc-isl12026",
 #ifdef CONFIG_OF
 		.of_match_table = of_match_ptr(isl12026_dt_match),
 #endif
 	},
-	.probe		= isl12026_probe,
-	.id_table	= isl12026_id,
+	.probe      = isl12026_probe,
+	.id_table   = isl12026_id,
 };
 
 module_i2c_driver(isl12026_driver);
