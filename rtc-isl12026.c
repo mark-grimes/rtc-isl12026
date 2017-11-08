@@ -85,31 +85,16 @@ static int isl12026_read_regs(struct i2c_client *client, uint8_t reg,
 	return 0;
 }
 
-/* Write to a Clock/Control Register (CCR). The ISL12026 requires a strict sequence of:
-       1) Set the WEL bit in the status register
-       2) Set the RWEL and WEL bits in the status register
-       3) Write to the register you originally intended  */
-static int isl12026_write_ccr_reg(struct i2c_client *client,
+/* Do not use this function directly, unless you are writing to the status
+   register. Writes to all other locations require a strict write sequence. See
+   isl12026_write_ccr_reg. */
+static int isl12026_write_reg(struct i2c_client *client,
 			      uint8_t reg, uint8_t val)
 {
-	/* register addresses are all 2 bytes, but the highest byte is never used */
-	uint8_t WEL_bit[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_WEL };
-	uint8_t WEL_and_RWEL_bits[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL };
+	/* register addresses are 2 bytes, but the highest byte is never used */
 	uint8_t data[3] = { 0x00, reg, val };
 
 	struct i2c_msg msgs[] = {
-		{ /* Set WEL bit in the status register */
-			.addr   = client->addr,
-			.flags  = 0,
-			.len    = sizeof(WEL_bit),
-			.buf    = WEL_bit
-		},
-		{ /* Set WEL and RWEL bits in the status register */
-			.addr   = client->addr,
-			.flags  = 0,
-			.len    = sizeof(WEL_and_RWEL_bits),
-			.buf    = WEL_and_RWEL_bits
-		}, /* Perform the write intended */
 		{
 			.addr   = client->addr,
 			.flags  = 0,
@@ -122,36 +107,43 @@ static int isl12026_write_ccr_reg(struct i2c_client *client,
 
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (ret != ARRAY_SIZE(msgs)) {
-		dev_err(&client->dev, "%s: write error, ret=%d\n",
-			__func__, ret);
+		dev_err(&client->dev, "%s: write error, ret=%d, reg=%02x, val=%02x\n",
+			__func__, ret, reg, val);
 		return -EIO;
 	}
 
 	return 0;
 }
 
+/* Write to a Clock/Control Register (CCR). The ISL12026 requires a strict sequence of:
+       1) Set the WEL bit in the status register
+       2) Set the RWEL and WEL bits in the status register
+       3) Write to the register you originally intended
+   Note that a STOP is required between each transaction, so this can't be performed
+   with a series of 3 messages in 1 call to i2c_transfer. */
+static int isl12026_write_ccr_reg(struct i2c_client *client,
+			      uint8_t reg, uint8_t val)
+{
+	int ret;
+
+	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_WEL);
+	if(ret != 0) return ret;
+
+	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL);
+	if(ret != 0) return ret;
+
+	ret = isl12026_write_reg(client, reg, val);
+	return ret;
+}
+
 /* Write the bytes given without adding the register address before hand, assuming
    the caller has already done this themselves (saves copying into a new array).
-   See isl12026_write_ccr_reg above for a description of the write sequence. */
+   See isl12026_write_ccr_reg above for a description of the write sequence.
+   Remember that for the ISL12026 register addresses are 2 bytes, so the data
+   passed to this function should be [0x00, regAddress, data1, data2...] */
 static int isl12026_write_ccr_bytes(struct i2c_client *client, uint8_t *data, size_t n)
 {
-	/* register addresses are all 2 bytes, but the highest byte is never used */
-	uint8_t WEL_bit[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_WEL };
-	uint8_t WEL_and_RWEL_bits[3] = { 0x00, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL };
-
 	struct i2c_msg msgs[] = {
-		{ /* Set WEL bit in the status register */
-			.addr   = client->addr,
-			.flags  = 0,
-			.len    = sizeof(WEL_bit),
-			.buf    = WEL_bit
-		},
-		{ /* Set WEL and RWEL bits in the status register */
-			.addr   = client->addr,
-			.flags  = 0,
-			.len    = sizeof(WEL_and_RWEL_bits),
-			.buf    = WEL_and_RWEL_bits
-		}, /* Perform the write intended */
 		{
 			.addr   = client->addr,
 			.flags  = 0,
@@ -161,6 +153,12 @@ static int isl12026_write_ccr_bytes(struct i2c_client *client, uint8_t *data, si
 	};
 
 	int ret;
+
+	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_WEL);
+	if(ret != 0) return ret;
+
+	ret = isl12026_write_reg(client, ISL12026_REG_SR, ISL12026_SR_RWEL | ISL12026_SR_WEL);
+	if(ret != 0) return ret;
 
 	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (ret != ARRAY_SIZE(msgs)) {
