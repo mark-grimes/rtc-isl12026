@@ -19,6 +19,7 @@ class TestTSL2591(unittest.TestCase):
         """
         device = TSL2591.TSL2591()
         device.powerOn()
+        device.waitForIntegration() # add an extra wait here, in case the integration time was changed
 
         results = {}
         for gain in [TSL2591.GAIN_LOW, TSL2591.GAIN_MED, TSL2591.GAIN_HIGH, TSL2591.GAIN_MAX]:
