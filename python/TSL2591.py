@@ -20,6 +20,14 @@ INTEGRATIONTIME_500MS = 0x04
 INTEGRATIONTIME_600MS = 0x05
 
 class TSL2591(object):
+    """
+    Class to control the TSL 2591 ambient light sensor. Datasheet is available at
+    http://ams.com/eng/content/download/389383/1251117/221135. There are some documents
+    about calculating lux on the [product description page]
+    (http://ams.com/eng/Products/Light-Sensors/Ambient-Light-Sensors/TSL25911). Note
+    that the website numbers the item as "25911" but all the information seems to be
+    for "2591".
+    """
 
     def __init__(self, bus=None):
         if bus==None: self._bus=smbus.SMBus(1)
@@ -69,6 +77,57 @@ class TSL2591(object):
 
     def rawValues(self):
         return self._readChannelRegisters()
+
+    def lux(self):
+        """
+        Copied from https://github.com/maxlklaxl/python-tsl2591/blob/master/tsl2591/read_tsl.py
+        which is under the MIT licence. The MIT licence is available from https://opensource.org/licenses/MIT
+
+        I have **not checked this** equation and can find nothing about it on the datasheet.
+        """
+        full, ir = self.rawValues()
+
+        # Check for overflow conditions first
+        if (full == 0xFFFF) | (ir == 0xFFFF):
+            return 0
+
+        case_integ = {
+            INTEGRATIONTIME_100MS: 100.,
+            INTEGRATIONTIME_200MS: 200.,
+            INTEGRATIONTIME_300MS: 300.,
+            INTEGRATIONTIME_400MS: 400.,
+            INTEGRATIONTIME_500MS: 500.,
+            INTEGRATIONTIME_600MS: 600.,
+            }
+        if self._integrationTime in case_integ.keys():
+            atime = case_integ[self._integrationTime]
+        else:
+            atime = 100.
+
+        case_gain = {
+            GAIN_LOW: 1.,
+            GAIN_MED: 25.,
+            GAIN_HIGH: 428.,
+            GAIN_MAX: 9876.,
+            }
+
+        if self._gain in case_gain.keys():
+            again = case_gain[self._gain]
+        else:
+            again = 1.
+
+        LUX_DF = 408.0
+        LUX_COEFB = 1.64  # CH0 coefficient
+        LUX_COEFC = 0.59  # CH1 coefficient A
+        LUX_COEFD = 0.86  # CH2 coefficient B
+
+        # cpl = (ATIME * AGAIN) / DF
+        cpl = (atime * again) / LUX_DF
+        lux1 = (full - (LUX_COEFB * ir)) / cpl
+        lux2 = ((LUX_COEFC * full) - (LUX_COEFD * ir)) / cpl
+
+        # The highest value is the approximate lux equivalent
+        return max([lux1, lux2])
 
     def _readRegister(self, register):
         self._bus.write_byte( self._address, (0xa0 | register) )
