@@ -12,6 +12,13 @@ GAIN_MED  = 0x10  # (min=22x, typical=24.5x, max=27x) for both channels
 GAIN_HIGH = 0x20  # (min=360x, typical=400x, max=440x) for both channels
 GAIN_MAX  = 0x30  # (min=8500x, typical=9200x, max=9900x) for channel 0; (min=9100x, typical=9900x, max=10700x) for channel 1
 
+INTEGRATIONTIME_100MS = 0x00
+INTEGRATIONTIME_200MS = 0x01
+INTEGRATIONTIME_300MS = 0x02
+INTEGRATIONTIME_400MS = 0x03
+INTEGRATIONTIME_500MS = 0x04
+INTEGRATIONTIME_600MS = 0x05
+
 class TSL2591(object):
 
     def __init__(self, bus=None):
@@ -23,9 +30,10 @@ class TSL2591(object):
         if( self._readRegister(0x12)!=0x50 ):
             raise Exception("TSL2591 device does not respond with the correct device ID")
 
-        config = self._readConfigRegister()
-        self._integrationTime = config & 0x07
-        self._gain = config & 0x30
+        # Setup the chip so that it always has predictable initial settings
+        self._integrationTime = INTEGRATIONTIME_100MS
+        self._gain = GAIN_LOW
+        self._writeConfigRegister( self._gain | self._integrationTime )
 
     def powerOn(self):
         self._writeEnableRegister( 0x02|0x01 ) # 0x02 is ALS enable; 0x01 is power on
@@ -40,6 +48,15 @@ class TSL2591(object):
         if gain not in [GAIN_LOW, GAIN_MED, GAIN_HIGH, GAIN_MAX]:
             raise Exception("Invalid gain value "+str(gain))
         self._gain = gain
+        self._writeConfigRegister( self._gain | self._integrationTime )
+
+    def getIntegrationTime(self):
+        return self._integrationTime
+
+    def setIntegrationTime(self, integrationTime):
+        if integrationTime not in [INTEGRATIONTIME_100MS, INTEGRATIONTIME_200MS, INTEGRATIONTIME_300MS, INTEGRATIONTIME_400MS, INTEGRATIONTIME_500MS, INTEGRATIONTIME_600MS]:
+            raise Exception("Invalid integration time value "+str(integrationTime))
+        self._integrationTime = integrationTime
         self._writeConfigRegister( self._gain | self._integrationTime )
 
     def rawValues(self):

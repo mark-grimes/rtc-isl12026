@@ -58,5 +58,31 @@ class TestTSL2591(unittest.TestCase):
         self.assertEqual( TSL2591.GAIN_MAX, device.getGain() );
         self.assertEqual( TSL2591.GAIN_MAX, 0x30 & device._readConfigRegister() );
 
+    def test_getAndSetIntegrationTime(self):
+        device = TSL2591.TSL2591()
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_100MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_100MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_100MS, 0x07 & device._readConfigRegister() );
+
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_200MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_200MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_200MS, 0x07 & device._readConfigRegister() );
+
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_300MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_300MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_300MS, 0x07 & device._readConfigRegister() );
+
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_400MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_400MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_400MS, 0x07 & device._readConfigRegister() );
+
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_500MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_500MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_500MS, 0x07 & device._readConfigRegister() );
+
+        device.setIntegrationTime( TSL2591.INTEGRATIONTIME_600MS )
+        self.assertEqual( TSL2591.INTEGRATIONTIME_600MS, device.getIntegrationTime() );
+        self.assertEqual( TSL2591.INTEGRATIONTIME_600MS, 0x07 & device._readConfigRegister() );
+
 if __name__ == "__main__":
     unittest.main()
