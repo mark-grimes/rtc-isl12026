@@ -9,7 +9,6 @@ __copyright__ = "Copyright 2017, Rymapt Ltd"
 __license__   = "To be decided"
 
 import unittest
-import time
 import TSL2591
 
 class TestTSL2591(unittest.TestCase):
@@ -25,7 +24,7 @@ class TestTSL2591(unittest.TestCase):
         for gain in [TSL2591.GAIN_LOW, TSL2591.GAIN_MED, TSL2591.GAIN_HIGH, TSL2591.GAIN_MAX]:
             device.setGain( gain )
             # need to perform a sleep because it takes a little bit of time to transition
-            time.sleep(0.5)
+            device.waitForIntegration()
             results[gain] = device.rawValues()
 
         # Channel 0 (visible and IR)
@@ -62,26 +61,32 @@ class TestTSL2591(unittest.TestCase):
         device = TSL2591.TSL2591()
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_100MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_100MS, device.getIntegrationTime() );
+        self.assertEqual( 0.1, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_100MS, 0x07 & device._readConfigRegister() );
 
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_200MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_200MS, device.getIntegrationTime() );
+        self.assertEqual( 0.2, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_200MS, 0x07 & device._readConfigRegister() );
 
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_300MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_300MS, device.getIntegrationTime() );
+        self.assertEqual( 0.3, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_300MS, 0x07 & device._readConfigRegister() );
 
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_400MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_400MS, device.getIntegrationTime() );
+        self.assertEqual( 0.4, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_400MS, 0x07 & device._readConfigRegister() );
 
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_500MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_500MS, device.getIntegrationTime() );
+        self.assertEqual( 0.5, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_500MS, 0x07 & device._readConfigRegister() );
 
         device.setIntegrationTime( TSL2591.INTEGRATIONTIME_600MS )
         self.assertEqual( TSL2591.INTEGRATIONTIME_600MS, device.getIntegrationTime() );
+        self.assertEqual( 0.6, device.getIntegrationTimeSeconds() );
         self.assertEqual( TSL2591.INTEGRATIONTIME_600MS, 0x07 & device._readConfigRegister() );
 
 if __name__ == "__main__":

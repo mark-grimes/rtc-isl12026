@@ -1,7 +1,7 @@
 """
 Class to talk to the TSL2591 light sensor.
 """
-import smbus
+import smbus, time
 
 __author__    = "Mark Grimes"
 __copyright__ = "Copyright 2017, Rymapt Ltd"
@@ -53,11 +53,19 @@ class TSL2591(object):
     def getIntegrationTime(self):
         return self._integrationTime
 
+    def getIntegrationTimeSeconds(self):
+        """ Returns the current integration time in seconds, rather than the enum value """
+        return (self._integrationTime+1)/10.0
+
     def setIntegrationTime(self, integrationTime):
         if integrationTime not in [INTEGRATIONTIME_100MS, INTEGRATIONTIME_200MS, INTEGRATIONTIME_300MS, INTEGRATIONTIME_400MS, INTEGRATIONTIME_500MS, INTEGRATIONTIME_600MS]:
             raise Exception("Invalid integration time value "+str(integrationTime))
         self._integrationTime = integrationTime
         self._writeConfigRegister( self._gain | self._integrationTime )
+
+    def waitForIntegration(self):
+        """ Sleeps for the current integration time so that a reading can be collected """
+        time.sleep( self.getIntegrationTimeSeconds() * 1.2 ) # Allow 20% extra to be sure
 
     def rawValues(self):
         return self._readChannelRegisters()
