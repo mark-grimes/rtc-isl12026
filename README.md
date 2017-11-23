@@ -1,12 +1,6 @@
-# Kernel module driver for the Intersil 12026 Real Time Clock
+# Linux kernel module driver for the Intersil 12026 Real Time Clock
 
-## To use a pre-built version
-
-Look for a release tag and follow the instructions on the release notes. E.g.
-
-* [v0.0.1](https://gitlab.com/rymapt/EnvMonitorSensors/tags/v0.0.1)
-
-There might be more recent releases than listed here. Look in [the tag list](https://gitlab.com/rymapt/EnvMonitorSensors/tags).
+I intend to try and get this into the Linux kernel, but I want to test for a bit first. In the meantime...
 
 ## To compile yourself
 
